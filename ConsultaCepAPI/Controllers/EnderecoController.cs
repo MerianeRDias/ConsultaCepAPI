@@ -21,36 +21,34 @@ namespace ConsultaCepAPI.Controllers
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(cep) || cep.Length > 9 || cep.Length <= 6)
+                if (string.IsNullOrWhiteSpace(cep) || cep.Length != 8 )
                 {
-                    return GravarErro();
+                    throw new InvalidOperationException("Cep inválido.");
                 }
-
-                return Ok(api.Get<Model.Response>($"https://viacep.com.br/ws/{cep}/json/"));
+                return StatusCode(200, api.Get<Model.Response>($"https://viacep.com.br/ws/{cep}/json/"));
             }
-            catch (Exception)
+            catch (InvalidOperationException ex)
             {
-                return StatusCode(500);
+                return StatusCode(400, ex.Message);
+            }
+            catch (Exception ex)
+            {
+                var log = new Model.Erro()
+                {
+                    DataHora = DateTime.Now,
+                    MensagemErro = ex.Message,
+                    NomeAplicacao = "ConsultaCepAPI",
+                    NomeMaquina = Environment.MachineName,
+                    RastreioErro = ex.StackTrace,
+                    Usuario = Environment.UserName,
+                };
+
+                api.Post<string>("https://localhost:44336/v1/LogAplicacao", log);
+                return StatusCode(500, "Serviço indisponível no momento.");
             }
 
         }
 
 
-        [HttpPost]
-        [Route("v1/Logs")]
-        public IActionResult GravarErro()
-        {
-            var objetoEntrada = new Model.Erro()
-            {
-                DataHora = DateTime.Parse("2022-02-02T23:39:10.553Z"),
-                MensagemErro = "Error400",
-                NomeAplicacao = "APP",
-                NomeMaquina = "DESKTOP",
-                RastreioErro = "40089",
-                Usuario = "DK"
-            };
-
-            return Ok(api.Post<Model.Erro>($"https://localhost:44336/v1/LogAplicacao", objetoEntrada));
-        }
     }
 }
