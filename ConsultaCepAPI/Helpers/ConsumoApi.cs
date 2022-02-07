@@ -8,38 +8,36 @@ namespace ConsultaCepAPI.Helpers
     public class ConsumoApi
     {
 
-        private readonly IHttpClientFactory ClientFactory;
+        private static readonly HttpClient _client = new HttpClient();
 
-        public ConsumoApi(IHttpClientFactory clientFactory)
+        public static T Get<T>(string url)
         {
-            ClientFactory = clientFactory;
-        }
 
-        public T Get<T>(string url)
-        {
-            var client = ClientFactory.CreateClient();
-
-            var response = client.GetAsync(url).Result;
+            var response = _client.GetAsync(url).Result;
 
             if (response.StatusCode != System.Net.HttpStatusCode.OK)
-                throw new Exception("Ocorreu um erro na consulta: " + response.Content.ReadAsStringAsync().Result);
-        
+            {
+                throw new Exception("Ocorreu um erro na consulta!");
+            }
+               
             return JsonConvert.DeserializeObject<T>(response.Content.ReadAsStringAsync().Result);
         }
 
-        public T Post<T>(string url, object objetoEntrada)
+        public static T Post<T>(string url, object objetoEntrada)
         {
             string json = JsonConvert.SerializeObject(objetoEntrada);
 
             StringContent content = new StringContent(json, Encoding.UTF8, "application/json");
-            var client = ClientFactory.CreateClient();
-            var response = client.PostAsync(url, content).Result;
+           
+            var response = _client.PostAsync(url, content).Result;
 
-            if (response.StatusCode != System.Net.HttpStatusCode.OK)
-                throw new Exception("Ocorreu um erro na api: " + response.Content.ReadAsStringAsync().Result);
+            if (response.StatusCode == System.Net.HttpStatusCode.OK)
+            {
+                return JsonConvert.DeserializeObject<T>(response.Content.ReadAsStringAsync().Result);
+            }
 
+            throw new Exception("Ocorreu um erro na api!");
 
-            return JsonConvert.DeserializeObject<T>(response.Content.ReadAsStringAsync().Result);
         }
 
     }

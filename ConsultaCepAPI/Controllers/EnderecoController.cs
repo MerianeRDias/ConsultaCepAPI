@@ -8,12 +8,6 @@ namespace ConsultaCepAPI.Controllers
     [ApiController]
     public class EnderecoController : ControllerBase
     {
-        private readonly Helpers.ConsumoApi api;
-
-        public EnderecoController(IHttpClientFactory clientFactory)
-        {
-            api = new Helpers.ConsumoApi(clientFactory);
-        }
 
         [HttpGet]
         [Route("v1/Endereco/Cep/{cep}")]
@@ -21,11 +15,19 @@ namespace ConsultaCepAPI.Controllers
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(cep) || cep.Length != 8 )
+                if (string.IsNullOrWhiteSpace(cep))
                 {
-                    throw new InvalidOperationException("Cep inválido.");
+                    throw new InvalidOperationException(" O CEP deverá ser informado!");
                 }
-                return StatusCode(200, api.Get<Model.Response>($"https://viacep.com.br/ws/{cep}/json/"));
+
+                cep = cep.Replace("-", "");
+                if (cep.Length != 8)
+                {
+                    throw new InvalidOperationException(" CEP inválido!");
+                }  
+
+                return StatusCode(200, Helpers.ConsumoApi.Get<Model.Response>($"https://viacep.com.br/ws/{cep}/json/"));
+
             }
             catch (InvalidOperationException ex)
             {
@@ -43,8 +45,8 @@ namespace ConsultaCepAPI.Controllers
                     Usuario = Environment.UserName,
                 };
 
-                api.Post<string>("https://localhost:44336/v1/LogAplicacao", log);
-                return StatusCode(500, "Serviço indisponível no momento.");
+                Helpers.ConsumoApi.Post<string>("https://logaplicacao.aiur.com.br/v1/Logs", log);
+                return StatusCode(500);
             }
 
         }
